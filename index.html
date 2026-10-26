@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합과학2: 발열·흡열 반응 종합 가상 실험실 & 수행평가 도우미</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+
+        /* Custom Animations for Lab Visuals */
+        @keyframes riseBubble {
+            0% { transform: translateY(0) scale(0.8); opacity: 0; }
+            30% { opacity: 0.85; }
+            100% { transform: translateY(-110px) scale(1.2); opacity: 0; }
+        }
+        @keyframes floatSteam {
+            0% { transform: translateY(0) scaleX(1); opacity: 0; }
+            50% { transform: translateY(-25px) scaleX(1.15); opacity: 0.6; }
+            100% { transform: translateY(-55px) scaleX(0.9); opacity: 0; }
+        }
+        @keyframes pulseArrowOut {
+            0%, 100% { transform: translateX(0); opacity: 0.7; }
+            50% { transform: translateX(8px); opacity: 1; }
+        }
+        @keyframes pulseArrowIn {
+            0%, 100% { transform: translateX(0); opacity: 0.7; }
+            50% { transform: translateX(-8px); opacity: 1; }
+        }
+        .bubble-anim { animation: riseBubble 1.6s infinite ease-in; }
+        .steam-anim { animation: floatSteam 2.2s infinite ease-in-out; }
+        .arrow-out { animation: pulseArrowOut 1.2s infinite ease-in-out; }
+        .arrow-in { animation: pulseArrowIn 1.2s infinite ease-in-out; }
+
+        /* Print friendly styles */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .print-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-600 text-white shadow-lg py-4 px-4 sm:px-6 sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-flask-vial text-2xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider bg-amber-400 text-slate-900 px-2 py-0.5 rounded-md">미래엔 통합과학2</span>
+                        <span class="text-xs bg-white/20 px-2.5 py-0.5 rounded-full">2학기 수행평가 완벽 대비</span>
+                    </div>
+                    <h1 class="text-lg sm:text-2xl font-extrabold mt-0.5">물질 변화에서의 에너지 출입 (발열·흡열) 가상 실험실</h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openSummaryModal()" class="bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl border border-white/20 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-table-list"></i> 6종 반응 한눈에 비교표
+                </button>
+                <button onclick="window.print()" class="bg-white text-indigo-700 hover:bg-indigo-50 text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> 학습지 인쇄
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 flex-grow w-full space-y-6">
+
+        <!-- Reaction Selector Bar -->
+        <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 no-print">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-vials text-indigo-600"></i> 실험할 화학 반응을 선택하세요 (총 6종)
+                </h2>
+                <span class="text-xs text-slate-500">반응을 선택하면 실험 시뮬레이터와 하단 수행평가 1·2·3번 답안이 자동으로 맞춰집니다.</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Exothermic Group -->
+                <div class="bg-rose-50/60 border border-rose-200 rounded-xl p-3">
+                    <div class="text-xs font-bold text-rose-600 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-fire-flame-curved"></i> 발열 반응 (열에너지 방출 · 주변 온도 상승)
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="exo-buttons">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Endothermic Group -->
+                <div class="bg-sky-50/60 border border-sky-200 rounded-xl p-3">
+                    <div class="text-xs font-bold text-sky-600 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-snowflake"></i> 흡열 반응 (열에너지 흡수 · 주변 온도 하강)
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="endo-buttons">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 1: Interactive Lab Simulator + Data Table & Graph (40점) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-card">
+            <!-- Section Header matching Worksheet -->
+            <div class="bg-slate-800 text-white px-5 py-3.5 flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center gap-2.5">
+                    <span class="bg-indigo-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-md">문항 1</span>
+                    <h2 class="text-base sm:text-lg font-bold">1. 에너지 흡수, 방출 탐구하기 <span class="text-amber-300 text-sm font-semibold">[40점]</span></h2>
+                </div>
+                <div id="reaction-type-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-rose-500 text-white">
+                    발열 반응 (Exothermic)
+                </div>
+            </div>
+
+            <div class="p-5 sm:p-6 space-y-6">
+                <!-- Top Info Row: Materials & Chemical Equation -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <div class="lg:col-span-5 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i class="fa-solid fa-square-check text-indigo-600"></i> 실험 준비물</span>
+                                <button onclick="copyText('materials-text', '실험 준비물이 복사되었습니다.')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 no-print">
+                                    <i class="fa-regular fa-copy"></i> 복사
+                                </button>
+                            </div>
+                            <p id="materials-text" class="text-sm font-semibold text-slate-800 leading-relaxed"></p>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+                            <span>권장 안전장비: 보안경, 실험용 장갑, 실험복</span>
+                            <span id="curriculum-tag" class="font-bold text-indigo-600"></span>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i class="fa-solid fa-square-check text-indigo-600"></i> 화학식 (반응식 및 열에너지 출입 표시)</span>
+                                <button onclick="copyText('equation-plain', '화학 반응식이 복사되었습니다.')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 no-print">
+                                    <i class="fa-regular fa-copy"></i> 복사
+                                </button>
+                            </div>
+                            <div id="equation-html" class="text-base sm:text-lg font-extrabold text-indigo-950 bg-white px-3.5 py-2.5 rounded-lg border border-slate-200 my-1 overflow-x-auto"></div>
+                            <span id="equation-plain" class="hidden"></span>
+                        </div>
+                        <p id="phenomenon-desc" class="text-xs text-slate-600 mt-1.5"></p>
+                    </div>
+                </div>
+
+                <!-- Interactive Visual Lab & Live Chart Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                    
+                    <!-- Left: Visual Beaker / Flask Apparatus -->
+                    <div class="lg:col-span-5 bg-slate-900 text-white rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden min-h-[380px]">
+                        <!-- Top Status Bar inside Simulator -->
+                        <div class="flex justify-between items-center z-10">
+                            <div class="flex items-center gap-2">
+                                <span id="sim-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                                <span id="sim-status-text" class="text-xs font-semibold text-slate-300">실험 대기 중 (0초)</span>
+                            </div>
+                            <div class="bg-slate-800/90 border border-slate-700 px-3 py-1 rounded-lg flex items-center gap-2">
+                                <i class="fa-solid fa-temperature-half text-amber-400"></i>
+                                <span class="text-xs text-slate-400">현재 온도:</span>
+                                <span id="live-temp-badge" class="text-lg font-extrabold text-white">20.0°C</span>
+                            </div>
+                        </div>
+
+                        <!-- Center Beaker & Energy Arrows Illustration -->
+                        <div class="my-auto py-4 flex flex-col items-center justify-center relative z-10">
+                            
+                            <!-- Energy Flow Direction Banner -->
+                            <div id="energy-direction-pill" class="mb-3 px-3.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-2">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i> 계(반응물) → 주위로 열에너지 방출
+                            </div>
+
+                            <div class="relative flex items-center justify-center w-full max-w-xs h-48">
+                                <!-- Left Energy Arrow -->
+                                <div id="left-energy-arrow" class="flex flex-col items-center mr-3 text-rose-400">
+                                    <div class="flex items-center gap-1 font-bold text-xs">
+                                        <i id="left-arrow-icon" class="fa-solid fa-angles-left text-lg arrow-in"></i>
+                                        <span id="left-arrow-label">열 방출</span>
+                                    </div>
+                                </div>
+
+                                <!-- Beaker / Flask Vessel -->
+                                <div class="relative w-36 h-40 flex flex-col items-center justify-end">
+                                    <!-- Steam Waves (for hot exothermic) -->
+                                    <div id="steam-effect" class="absolute -top-6 flex gap-3 opacity-0 transition-opacity duration-500 pointer-events-none">
+                                        <span class="text-rose-300/80 text-xl steam-anim">♨️</span>
+                                        <span class="text-amber-200/80 text-lg steam-anim" style="animation-delay:0.6s">💨</span>
+                                        <span class="text-rose-300/80 text-xl steam-anim" style="animation-delay:1.1s">♨️</span>
+                                    </div>
+
+                                    <!-- Thermometer Stem -->
+                                    <div class="absolute -top-5 right-6 w-3.5 h-36 bg-slate-200 rounded-full border-2 border-slate-400 flex flex-col justify-end p-0.5 z-20 shadow-md">
+                                        <div id="thermometer-mercury" class="w-full bg-rose-500 rounded-full transition-all duration-500" style="height: 45%;"></div>
+                                        <div id="thermometer-bulb" class="w-5 h-5 rounded-full bg-rose-500 border-2 border-slate-300 -ml-1 -mb-1.5 shadow"></div>
+                                    </div>
+
+                                    <!-- Glass Beaker Rim -->
+                                    <div class="w-36 h-2.5 bg-slate-300/40 border-2 border-slate-300 rounded-full z-10"></div>
+
+                                    <!-- Glass Beaker Body -->
+                                    <div id="beaker-glass" class="w-32 h-32 border-x-2 border-b-4 border-slate-300 rounded-b-2xl bg-slate-800/40 backdrop-blur-sm relative overflow-hidden flex flex-col justify-end transition-colors duration-500">
+                                        <!-- Frost overlay for Endothermic -->
+                                        <div id="frost-overlay" class="absolute inset-0 bg-gradient-to-t from-sky-200/35 via-sky-100/15 to-transparent opacity-0 transition-opacity duration-700 pointer-events-none flex items-end justify-between p-1.5">
+                                            <i class="fa-regular fa-snowflake text-sky-200 text-xs animate-spin"></i>
+                                            <i class="fa-regular fa-snowflake text-sky-100 text-sm"></i>
+                                        </div>
+
+                                        <!-- Liquid Content -->
+                                        <div id="beaker-liquid" class="w-full h-20 bg-rose-500/40 border-t border-rose-300/50 transition-all duration-500 relative flex items-end justify-center p-2">
+                                            <!-- Solid Reactant / Ribbon / Granules at bottom -->
+                                            <div id="solid-reactant" class="w-16 h-3 bg-white/80 rounded-full transition-all duration-700 shadow-inner"></div>
+
+                                            <!-- Rising Gas Bubbles Container -->
+                                            <div id="bubbles-container" class="absolute inset-0 pointer-events-none hidden">
+                                                <span class="w-2 h-2 bg-white/80 rounded-full absolute bottom-2 left-5 bubble-anim"></span>
+                                                <span class="w-2.5 h-2.5 bg-white/70 rounded-full absolute bottom-3 left-10 bubble-anim" style="animation-delay: 0.4s"></span>
+                                                <span class="w-1.5 h-1.5 bg-white/90 rounded-full absolute bottom-2 left-16 bubble-anim" style="animation-delay: 0.8s"></span>
+                                                <span class="w-2 h-2 bg-white/75 rounded-full absolute bottom-4 left-20 bubble-anim" style="animation-delay: 1.1s"></span>
+                                                <span class="w-2.5 h-2.5 bg-white/80 rounded-full absolute bottom-1 left-12 bubble-anim" style="animation-delay: 1.4s"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Wooden Board & Water Drop (Specifically highlighted for Ba(OH)2 + NH4Cl) -->
+                                    <div id="wooden-board-wrap" class="w-40 flex flex-col items-center -mt-0.5 transition-transform duration-500">
+                                        <!-- Water drop / Ice layer between beaker and wood -->
+                                        <div id="water-freeze-layer" class="w-24 h-2 bg-sky-400/60 rounded-full transition-all duration-500 flex items-center justify-center">
+                                            <span id="freeze-status-label" class="text-[9px] font-extrabold text-sky-100 tracking-tighter"></span>
+                                        </div>
+                                        <div class="w-40 h-3.5 bg-amber-800 border border-amber-600 rounded-md shadow-md flex items-center justify-center">
+                                            <span class="text-[9px] text-amber-200 font-semibold">나무판 받침대</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Energy Arrow -->
+                                <div id="right-energy-arrow" class="flex flex-col items-center ml-3 text-rose-400">
+                                    <div class="flex items-center gap-1 font-bold text-xs">
+                                        <span id="right-arrow-label">열 방출</span>
+                                        <i id="right-arrow-icon" class="fa-solid fa-angles-right text-lg arrow-out"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live Phenomenon Caption -->
+                            <div id="live-visual-caption" class="mt-2 text-xs text-center text-slate-300 bg-slate-800/90 px-3.5 py-2 rounded-xl border border-slate-700 w-full">
+                                상단의 <strong>[실험 시작]</strong> 버튼을 눌러 30초 간격의 온도 변화를 관찰하세요.
+                            </div>
+                        </div>
+
+                        <!-- Bottom Control Buttons -->
+                        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 z-10 no-print">
+                            <button id="btn-play" onclick="startSimulation()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-1.5 shadow">
+                                <i class="fa-solid fa-play"></i> 실험 시작
+                            </button>
+                            <button onclick="instantCompleteSimulation()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-1.5 shadow">
+                                <i class="fa-solid fa-forward-fast"></i> 결과 즉시 보기
+                            </button>
+                            <button onclick="resetSimulation()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-rotate-left"></i> 초기화
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Time Table (30s~240s) & Graph -->
+                    <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+                        <!-- Time Table -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="flex justify-between items-center mb-2.5">
+                                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-table text-indigo-600"></i> 표로 나타내기 (시간에 따른 온도 변화)
+                                </h3>
+                                <span class="text-xs text-slate-500">초기 온도(0초): <strong>20.0°C</strong></span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-center border-collapse border border-slate-300 text-xs sm:text-sm bg-white rounded-lg overflow-hidden">
+                                    <thead>
+                                        <tr class="bg-slate-200/80 text-slate-800 font-bold">
+                                            <th class="border border-slate-300 p-2">시간(초)</th>
+                                            <th class="border border-slate-300 p-2">30</th>
+                                            <th class="border border-slate-300 p-2">60</th>
+                                            <th class="border border-slate-300 p-2">90</th>
+                                            <th class="border border-slate-300 p-2">120</th>
+                                            <th class="border border-slate-300 p-2">150</th>
+                                            <th class="border border-slate-300 p-2">180</th>
+                                            <th class="border border-slate-300 p-2">210</th>
+                                            <th class="border border-slate-300 p-2">240</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border border-slate-300 p-2 font-bold bg-slate-100 text-slate-700">온도(°C)</td>
+                                            <td id="cell-0" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-1" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-2" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-3" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-4" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-5" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-6" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                            <td id="cell-7" class="border border-slate-300 p-2 font-bold text-slate-700">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Chart Box -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex-grow flex flex-col">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-chart-line text-indigo-600"></i> 그래프로 나타내기
+                                </h3>
+                                <span id="chart-scale-hint" class="text-xs text-slate-500">가로축: 시간(초) / 세로축: 온도(°C)</span>
+                            </div>
+                            <div class="relative w-full h-56 sm:h-64 bg-white p-2 rounded-lg border border-slate-200 flex-grow">
+                                <canvas id="reactionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Worksheet Part 1 Analysis Answer Box -->
+                <div class="bg-indigo-50/70 rounded-xl p-4 sm:p-5 border border-indigo-200">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                        <h3 class="text-sm sm:text-base font-extrabold text-indigo-950 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-indigo-600"></i> [표와 그래프 분석하기] 수행평가 작성 모범 답안
+                        </h3>
+                        <button onclick="copyText('part1-analysis-text', '1번 표와 그래프 분석 답안이 복사되었습니다.')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 no-print">
+                            <i class="fa-regular fa-copy"></i> 답안 복사하기
+                        </button>
+                    </div>
+                    <p class="text-xs text-indigo-700 mb-2 font-medium">■ 질문: 시간에 따른 온도 변화를 관찰한 결과를 설명하고, 이 실험의 결과를 토대로 반응이 에너지 흡수 과정인지, 방출 과정인지 설명하여라.</p>
+                    <div id="part1-analysis-text" class="bg-white p-3.5 rounded-lg border border-indigo-100 text-sm text-slate-800 leading-relaxed font-medium"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 2 & PART 3 Grid matching Page 2 of Worksheet -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- PART 2: 음식 조리 방법 설계하기 [30점] -->
+            <section class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between print-card">
+                <div>
+                    <div class="bg-slate-800 text-white px-5 py-3.5 flex justify-between items-center">
+                        <div class="flex items-center gap-2.5">
+                            <span class="bg-amber-500 text-slate-950 text-xs font-extrabold px-2.5 py-1 rounded-md">문항 2</span>
+                            <h2 class="text-base sm:text-lg font-bold">2. 음식 조리 방법 설계하기 <span class="text-amber-300 text-sm font-semibold">[30점]</span></h2>
+                        </div>
+                        <button onclick="copyPart2()" class="bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 no-print">
+                            <i class="fa-regular fa-copy"></i> 2번 전체 복사
+                        </button>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <!-- Box 1: 에너지 흡수, 방출을 이용하는 방법 -->
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                            <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-1.5">
+                                에너지 흡수, 방출을 이용하는 방법
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-indigo-700 mb-1">■ 필요한 온도:</div>
+                                <div id="part2-temp" class="bg-white p-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-800"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-indigo-700 mb-1">■ 1번 탐구 결과를 토대로 자신이 필요한 온도를 얻는 방법은?</div>
+                                <div id="part2-method" class="bg-white p-3 rounded-lg border border-slate-200 text-sm text-slate-800 leading-relaxed"></div>
+                            </div>
+                        </div>
+
+                        <!-- Box 2: 음식 조리 방법 설계하기 -->
+                        <div class="bg-amber-50/60 rounded-xl p-4 border border-amber-200 space-y-2">
+                            <div class="flex justify-between items-center border-b border-amber-200/80 pb-1.5">
+                                <span class="text-xs font-extrabold text-amber-900">음식 조리 방법 설계하기</span>
+                                <span id="part2-cooking-badge" class="text-xs font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded">발열 조리 기구</span>
+                            </div>
+                            <div class="text-xs font-bold text-amber-800">■ 1번 탐구의 에너지 출입 방향을 이용하여 음식 조리 방법을 설계하여라.</div>
+                            <div id="part2-design" class="bg-white p-3.5 rounded-lg border border-amber-200 text-sm text-slate-800 leading-relaxed font-medium"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Cooking Demo Strip -->
+                <div class="px-5 pb-5 no-print">
+                    <div class="bg-slate-900 text-white p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3.5">
+                            <div id="cooking-sim-icon" class="text-4xl bg-slate-800 p-3 rounded-2xl border border-slate-700">🍱</div>
+                            <div>
+                                <div id="cooking-sim-title" class="font-bold text-sm sm:text-base text-amber-300">발열 도시락 조리 시뮬레이션</div>
+                                <div id="cooking-sim-status" class="text-xs text-slate-300 mt-0.5">버튼을 눌러 설계한 조리 도구를 작동시켜 보세요!</div>
+                            </div>
+                        </div>
+                        <button onclick="triggerCookingSim()" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition shrink-0 shadow">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 조리 도구 작동 테스트
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 3: 생활 주변의 에너지 출입 사례 분석하기 [30점] -->
+            <section class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between print-card">
+                <div>
+                    <div class="bg-slate-800 text-white px-5 py-3.5 flex justify-between items-center">
+                        <div class="flex items-center gap-2.5">
+                            <span class="bg-emerald-500 text-slate-950 text-xs font-extrabold px-2.5 py-1 rounded-md">문항 3</span>
+                            <h2 class="text-base sm:text-lg font-bold">3. 생활 주변 사례 분석하기 <span class="text-amber-300 text-sm font-semibold">[30점]</span></h2>
+                        </div>
+                        <button onclick="copyText('part3-life-text', '3번 생활 주변 사례 답안이 복사되었습니다.')" class="bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 no-print">
+                            <i class="fa-regular fa-copy"></i> 3번 복사
+                        </button>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <div class="bg-emerald-50/60 rounded-xl p-4 border border-emerald-200 space-y-2.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-emerald-800">■ 에너지 출입 방향 및 주변 온도 변화 설명하기</span>
+                                <span id="part3-example-tag" class="text-xs font-bold bg-emerald-200 text-emerald-950 px-2.5 py-0.5 rounded-full">대표 사례</span>
+                            </div>
+                            <div id="part3-life-text" class="bg-white p-3.5 rounded-lg border border-emerald-200 text-sm text-slate-800 leading-relaxed font-medium"></div>
+                        </div>
+
+                        <!-- Additional Alternative Examples Selector -->
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2.5">
+                            <div class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                                <i class="fa-solid fa-lightbulb text-amber-500"></i> 친구들과 겹치지 않는 추가 생활 속 사례 팁
+                            </div>
+                            <div id="part3-extra-examples" class="space-y-2 text-xs text-slate-700"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Concept Box at Bottom of Part 3 -->
+                <div class="px-5 pb-5">
+                    <div class="bg-indigo-950 text-indigo-100 p-4 rounded-xl text-xs space-y-1.5">
+                        <div class="font-bold text-amber-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap"></i> 미래엔 통합과학2 채점 기준 핵심 키워드 체크!
+                        </div>
+                        <p class="leading-relaxed text-indigo-200">
+                            답안 작성 시 <strong>① 에너지 이동 방향(계 → 주위 방출 / 주위 → 계 흡수)</strong>, <strong>② 주변의 온도 변화(상승 / 하강)</strong>, <strong>③ 발열 반응 / 흡열 반응 명칭</strong>이 모두 들어가면 감점 없이 만점을 받을 수 있습니다.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- All-in-One Comparison Table Modal -->
+    <div id="summary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-indigo-700 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-table-list"></i> 통합과학2 발열·흡열 반응 6종 한눈에 비교표
+                </h3>
+                <button onclick="closeSummaryModal()" class="text-white/80 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 text-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-slate-200 text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-800 font-bold">
+                                <th class="border border-slate-200 p-3">구분</th>
+                                <th class="border border-slate-200 p-3">반응 물질</th>
+                                <th class="border border-slate-200 p-3">온도 변화 (0~240초)</th>
+                                <th class="border border-slate-200 p-3">주요 관찰 현상</th>
+                                <th class="border border-slate-200 p-3">음식 조리 응용 (2번)</th>
+                                <th class="border border-slate-200 p-3">생활 속 사례 (3번)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
+                <button onclick="closeSummaryModal()" class="bg-slate-800 text-white font-semibold text-sm px-5 py-2 rounded-xl hover:bg-slate-700">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-2.5 text-xs sm:text-sm font-semibold opacity-0 pointer-events-none transition-opacity duration-300 z-50 no-print">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-msg">복사되었습니다!</span>
+    </div>
+
+    <footer class="text-center py-6 text-xs text-slate-400 no-print">
+        2022 개정 교육과정 미래엔 통합과학2 수행평가 맞춤형 시뮬레이터
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // Time Points matching the worksheet table
+        const TIME_LABELS = ['30', '60', '90', '120', '150', '180', '210', '240'];
+
+        // Comprehensive Database of 6 Exothermic & Endothermic Reactions
+        const REACTIONS = [
+            {
+                id: 'cacl2',
+                type: 'exo',
+                shortTitle: '염화 칼슘 + 물',
+                badge: '대표 발열 실험',
+                curriculumTag: '생활 속 대표 발열 반응',
+                materials: '비커(250mL), 증류수(물 100mL), 염화 칼슘(CaCl₂) 20g, 디지털 온도계, 유리 막대, 전자저울, 약숟가락',
+                equationHtml: 'CaCl<sub>2</sub>(s) &rarr; Ca<sup>2+</sup>(aq) + 2Cl<sup>-</sup>(aq) + <span class="text-rose-600">열에너지 방출</span>',
+                equationPlain: 'CaCl2(s) → Ca2+(aq) + 2Cl-(aq) + 열에너지',
+                phenomenonDesc: '하얀 염화 칼슘 알갱이가 물에 녹으면서 용해열을 방출하여 비커가 따뜻해지고 온도가 약 40°C까지 상승합니다.',
+                temps: [23.5, 27.0, 31.0, 35.5, 38.0, 39.5, 40.0, 40.0],
+                yMin: 15,
+                yMax: 45,
+                hasBubbles: false,
+                hasSteam: false,
+                woodFreeze: false,
+                liquidColor: 'rgba(244, 63, 94, 0.35)',
+                visualCaption: '염화 칼슘이 물에 용해되면서 주위로 열에너지를 방출하여 용액의 온도가 20.0°C에서 40.0°C까지 상승합니다.',
+                part1Analysis: '시간이 지남에 따라 용액의 온도가 초기 20.0°C에서 30초에 23.5°C, 120초에 35.5°C, 210초 이후에는 40.0°C까지 꾸준히 상승하였다. 이를 통해 염화 칼슘과 물의 반응은 반응물(계)이 가지고 있던 에너지를 주위로 방출하여 주변의 온도를 높이는 에너지 방출 과정(발열 반응)임을 알 수 있다.',
+                part2Temp: '음식을 따뜻하게 데우거나 국물을 가열하기 위해 필요한 고온 (약 70°C ~ 90°C)',
+                part2Method: '염화 칼슘(CaCl₂)이 물에 녹을 때 열에너지를 주위로 방출하여 온도가 올라가는 발열 반응 원리를 이용한다. 물의 양에 비해 염화 칼슘의 양을 충분히 늘리면 70~90°C 이상의 높은 온도를 빠르게 얻을 수 있다.',
+                part2CookingBadge: '무전원 발열 도시락',
+                part2Design: '[이중 용기 발열 도시락 설계] 도시락 용기를 이중 구조로 만들어 위 칸에는 밥과 반찬을 담은 알루미늄 용기를 넣고, 아래 칸에는 염화 칼슘 가루와 물 주머니를 분리해 넣는다. 식사 직전 당김 끈을 당겨 물 주머니를 터뜨리면 염화 칼슘과 물이 섞이며 강력한 발열 반응이 일어나고, 이때 방출되는 열에너지가 위 칸의 음식을 불이나 전기 없이도 따뜻하게 데워 조리한다.',
+                cookingIcon: '🍱',
+                cookingTitle: '이중 용기 발열 도시락 시뮬레이션',
+                cookingDoneMsg: '염화 칼슘 발열팩이 물과 반응하여 85°C 수증기로 도시락을 따끈하게 데웠습니다!',
+                part3Tag: '친환경 제설제 & 손난로',
+                part3Life: '[염화 칼슘 제설제와 철가루 손난로] 겨울철 눈이 쌓인 도로에 염화 칼슘(CaCl₂)을 뿌리면 눈(물)에 녹으면서 주위로 열에너지를 방출하는 발열 반응이 일어나 주변 온도가 높아지므로 눈이 빠르게 녹고 빙판을 예방한다. 또한 일회용 손난로 역시 철가루가 산소와 산화 반응을 할 때 열에너지를 주위로 방출하여 주변 온도를 높여준다.',
+                extraExamples: [
+                    '• 철가루 손난로(핫팩): 철(Fe)이 공기 중 산소(O₂)와 결합해 산화 철이 될 때 열을 방출하여 주변 온도가 상승함.',
+                    '• 도시가스(메테인)의 연소: 메테인(CH₄)이 산소와 반응할 때 많은 열과 빛을 방출하여 주변 온도를 높임.'
+                ]
+            },
+            {
+                id: 'mghcl',
+                type: 'exo',
+                shortTitle: '묽은 염산 + 마그네슘',
+                badge: '미래엔 교과서 대표 탐구',
+                curriculumTag: '미래엔 교과서 핵심 탐구',
+                materials: '시험관(또는 삼각 플라스크), 10% 묽은 염산(HCl) 30mL, 마그네슘(Mg) 리본 5cm, 온도계, 사포, 핀셋, 시험관대',
+                equationHtml: 'Mg(s) + 2HCl(aq) &rarr; MgCl<sub>2</sub>(aq) + H<sub>2</sub>(g)&uarr; + <span class="text-rose-600">열에너지 방출</span>',
+                equationPlain: 'Mg(s) + 2HCl(aq) → MgCl2(aq) + H2(g)↑ + 열에너지',
+                phenomenonDesc: '마그네슘 리본이 묽은 염산과 반응해 녹으면서 수소(H₂) 기체 기포가 활발하게 발생하고 온도가 급격히 올라갑니다.',
+                temps: [25.0, 31.5, 37.5, 42.0, 45.5, 47.0, 48.0, 48.0],
+                yMin: 15,
+                yMax: 55,
+                hasBubbles: true,
+                hasSteam: true,
+                woodFreeze: false,
+                liquidColor: 'rgba(251, 113, 133, 0.4)',
+                visualCaption: '마그네슘 리본 표면에서 수소(H₂) 기포가 보글보글 발생하며 반응열이 방출되어 온도가 48.0°C까지 급상승합니다!',
+                part1Analysis: '마그네슘 리본을 묽은 염산에 넣자 수소 기체가 발생하며 온도가 30초에 25.0°C에서 210초에 48.0°C까지 크게 상승하였다. 이 실험 결과를 통해 묽은 염산과 마그네슘의 화학 반응은 반응물이 생성물로 변하면서 주위로 열에너지를 방출하여 주변 온도를 높이는 에너지 방출 과정(발열 반응)임을 설명할 수 있다.',
+                part2Temp: '달걀을 반숙·완숙으로 익히거나 레토르트 식품을 가열할 수 있는 고온 (약 75°C ~ 95°C)',
+                part2Method: '금속과 산 또는 물이 반응할 때 급격히 열에너지를 방출하는 발열 반응을 이용한다. (실제 조리용 발열팩에서는 안전한 마그네슘-철 합금 가루와 소금물을 반응시켜 고열과 수증기를 얻는다.)',
+                part2CookingBadge: '야외용 마그네슘 발열 조리팩',
+                part2Design: '[마그네슘 발열 전투식량/캠핑 조리팩 설계] 지퍼백 형태의 내열 파우치 바닥에 마그네슘-철 합금 발열체를 넣고, 그 위에 밀봉된 볶음밥이나 카레 파우치를 넣는다. 파우치에 약간의 물을 부으면 마그네슘이 빠르게 산화·발열 반응을 일으키며 고온의 열에너지와 수증기를 방출하여, 캠핑이나 등산 시 불 없이도 10분 만에 음식을 뜨겁게 조리한다.',
+                cookingIcon: '⛺',
+                cookingTitle: '캠핑용 마그네슘 발열 조리팩 시뮬레이션',
+                cookingDoneMsg: '마그네슘 합금 발열체가 뜨거운 수증기를 방출하여 캠핑용 파우치 식품을 완벽히 익혔습니다!',
+                part3Tag: '산·염기 중화열 & 금속 산화',
+                part3Life: '[군용 전투식량 발열팩 및 산·염기 중화 반응] 마그네슘 합금에 물을 부어 산화시킬 때나, 위산(염산)이 과다 분비되었을 때 제산제(염기)를 복용하여 중화 반응이 일어날 때 모두 화학 반응 과정에서 열에너지가 주위로 방출되는 발열 반응이 일어나 주변 온도가 높아진다.',
+                extraExamples: [
+                    '• 일회용 손난로: 부직포 주머니 속 철가루가 산소와 반응하며 열에너지를 주위로 방출해 온도가 올라감.',
+                    '• 호흡 과정: 우리 몸속 세포에서 포도당이 산소와 반응해 에너지를 방출함으로써 체온(36.5°C)을 일정하게 유지함.'
+                ]
+            },
+            {
+                id: 'cao',
+                type: 'exo',
+                shortTitle: '산화 칼슘(생석회) + 물',
+                badge: '고온 발열 반응',
+                curriculumTag: '미래엔 교과서 발열 도시락 원리',
+                materials: '비커(또는 내열 용기), 산화 칼슘(생석회, CaO) 20g, 물(H₂O) 50mL, 디지털 온도계, 유리 막대, 약숟가락',
+                equationHtml: 'CaO(s) + H<sub>2</sub>O(l) &rarr; Ca(OH)<sub>2</sub>(aq) + <span class="text-rose-600">다량의 열에너지 방출</span>',
+                equationPlain: 'CaO(s) + H2O(l) → Ca(OH)2(aq) + 열에너지',
+                phenomenonDesc: '산화 칼슘(생석회)과 물이 만나 수산화 칼슘이 생성되면서 매우 많은 열을 방출하여 수증기가 피어오르고 온도가 75°C까지 치솟습니다.',
+                temps: [32.0, 46.0, 58.5, 67.0, 72.0, 74.5, 75.0, 75.0],
+                yMin: 15,
+                yMax: 85,
+                hasBubbles: true,
+                hasSteam: true,
+                woodFreeze: false,
+                liquidColor: 'rgba(225, 29, 72, 0.45)',
+                visualCaption: '산화 칼슘(생석회)이 물과 격렬히 반응하여 수증기가 피어오르고 온도가 75.0°C까지 대폭 상승합니다!',
+                part1Analysis: '산화 칼슘에 물을 부은 직후부터 온도가 급격히 올라 30초에 32.0°C, 90초에 58.5°C를 기록했고 210초에는 75.0°C의 고온에 도달하였다. 이는 반응물인 산화 칼슘과 물의 에너지 합이 생성물인 수산화 칼슘의 에너지보다 커서, 그 차이만큼 다량의 열에너지를 주위로 방출하는 강력한 에너지 방출 과정(발열 반응)이기 때문이다.',
+                part2Temp: '라면을 끓이거나 즉석밥·전골 요리를 완전히 데우기 위한 고온 (약 80°C ~ 100°C)',
+                part2Method: '산화 칼슘(생석회, CaO)이 물(H₂O)과 반응하여 수산화 칼슘이 될 때 다량의 열에너지를 방출하는 강력한 발열 반응을 이용해 물이 끓을 정도의 고온을 얻는다.',
+                part2CookingBadge: '생석회 즉석 발열 냄비',
+                part2Design: '[생석회 자가 발열 즉석 전골/라면 용기 설계] 큰 외피 용기 바닥에 부직포로 감싼 산화 칼슘(생석회) 발열팩을 깔고, 그 위에 음식물과 육수가 담긴 내부 용기를 얹은 뒤 뚜껑에 증기 배출 구멍을 만든다. 바닥 칸에 찬물을 부으면 생석회와 물이 반응해 순식간에 80~95°C 이상의 열에너지를 방출하므로, 야외에서도 라면이나 전골을 보글보글 끓여 조리할 수 있다.',
+                cookingIcon: '🍲',
+                cookingTitle: '생석회 자가 발열 전골냄비 시뮬레이션',
+                cookingDoneMsg: '생석회(CaO)와 물이 반응해 90°C 이상의 고열을 방출하여 즉석 전골을 보글보글 끓였습니다!',
+                part3Tag: '발열 도시락 & 시멘트 경화',
+                part3Life: '[시판 발열 도시락 및 콘크리트 양생 과정] 기차나 야외에서 먹는 발열 도시락의 끈을 당기면 내부의 산화 칼슘과 물이 만나 열에너지를 주위로 방출하므로 주변 온도가 크게 상승한다. 또한 건축 현장에서 시멘트(주성분 산화 칼슘)에 물을 섞어 굳힐 때도 발열 반응이 일어나 주변으로 열을 방출한다.',
+                extraExamples: [
+                    '• 철의 산화(일회용 핫팩): 철가루가 산소와 결합하며 열을 주위로 방출하여 주변 온도를 높임.',
+                    '• 황산의 희석 및 수산화 나트륨 용해: 강염기인 수산화 나트륨(NaOH) 고체를 물에 녹일 때 많은 용해열이 방출됨.'
+                ]
+            },
+            {
+                id: 'baoh2',
+                type: 'endo',
+                shortTitle: '수산화 바륨 + 염화 암모늄',
+                badge: '미래엔 교과서 대표 탐구',
+                curriculumTag: '미래엔 교과서 핵심 탐구',
+                materials: '삼각 플라스크(또는 비커), 수산화 바륨(Ba(OH)₂·8H₂O) 20g, 염화 암모늄(NH₄Cl) 10g, 나무판, 스포이트(물), 유리 막대, 디지털 온도계',
+                equationHtml: 'Ba(OH)<sub>2</sub>&middot;8H<sub>2</sub>O(s) + 2NH<sub>4</sub>Cl(s) + <span class="text-sky-600">열에너지 흡수</span> &rarr; BaCl<sub>2</sub>(aq) + 2NH<sub>3</sub>(aq) + 10H<sub>2</sub>O(l)',
+                equationPlain: 'Ba(OH)2·8H2O(s) + 2NH4Cl(s) + 열에너지 → BaCl2(aq) + 2NH3(aq) + 10H2O(l)',
+                phenomenonDesc: '두 고체 분말을 섞으면 주변의 열을 강하게 흡수해 영하(-12°C)로 떨어지며, 플라스크 바닥과 나무판 사이의 물이 얼어 쩍 들러붙습니다!',
+                temps: [12.0, 3.5, -3.0, -7.5, -10.0, -11.5, -12.0, -12.0],
+                yMin: -18,
+                yMax: 25,
+                hasBubbles: false,
+                hasSteam: false,
+                woodFreeze: true,
+                liquidColor: 'rgba(56, 189, 248, 0.45)',
+                visualCaption: '주변 열을 급격히 흡수해 영하 12.0°C까지 냉각되며, 바닥의 물방울이 얼어 나무판과 플라스크가 단단히 얼어붙었습니다!',
+                part1Analysis: '시간이 지남에 따라 온도가 초기 20.0°C에서 급격히 내려가 90초에는 영하인 -3.0°C가 되었고, 210초에는 -12.0°C까지 하강하여 플라스크 바닥과 나무판 사이의 물이 얼어붙었다. 이를 통해 이 반응은 주위로부터 열에너지를 흡수하여 주변 온도를 낮추는 에너지 흡수 과정(흡열 반응)임을 알 수 있다.',
+                part2Temp: '과일 주스나 우유를 얼려 슬러시·아이스크림을 만들 수 있는 영하의 저온 (약 -5°C ~ -12°C)',
+                part2Method: '수산화 바륨과 염화 암모늄의 반응처럼 화학 반응 시 주위의 열에너지를 강하게 흡수하여 온도가 영하로 내려가는 흡열 반응(또는 냉매 반응)을 이용해 급속 냉각 온도를 얻는다. (실제 식품 조리 시에는 안전한 흡열 냉매 용기를 음식과 완전히 분리된 외부 냉각조로 사용한다.)',
+                part2CookingBadge: '무전원 즉석 아이스크림 메이커',
+                part2Design: '[이중 밀폐 구조 즉석 수제 아이스크림/슬러시 메이커 설계] 바깥쪽 밀폐된 냉각 용기에 흡열 반응 물질을 넣고, 안쪽 스테인리스 용기에는 우유와 설탕(또는 과일 주스)을 넣은 뒤 두 용기가 절대 섞이지 않도록 완전히 차단한다. 외부 냉각 용기에서 흡열 반응이 일어나면 안쪽 용기의 열에너지를 빠르게 흡수해 영하로 냉각시키므로, 스푼으로 저어주기만 하면 냉동실 없이도 즉석에서 시원한 구슬 아이스크림이나 슬러시를 조리할 수 있다.',
+                cookingIcon: '🍨',
+                cookingTitle: '무전원 즉석 아이스크림 메이커 시뮬레이션',
+                cookingDoneMsg: '강력한 흡열 반응이 내부 용기의 열을 빼앗아 우유 주스를 영하로 급속 냉각시켜 수제 아이스크림을 완성했습니다!',
+                part3Tag: '휴대용 냉찜질팩 & 냉각 장치',
+                part3Life: '[응급용 휴대용 냉찜질팩(아이스팩)] 운동 중 발목을 삐거나 타박상을 입었을 때 사용하는 일회용 냉찜질팩은 내부의 물 주머니를 터뜨리면 화학 물질이 반응하면서 주위의 열에너지를 빠르게 흡수하는 흡열 반응이 일어난다. 그 결과 찜질팩과 주변 피부의 온도가 급격히 낮아져 붓기와 통증을 가라앉힌다.',
+                extraExamples: [
+                    '• 식물의 광합성: 식물이 빛에너지를 흡수하여 이산화 탄소와 물로부터 포도당을 합성하는 대표적인 흡열 반응.',
+                    '• 물의 전기 분해 및 소금(염화 나트륨)의 열분해: 에너지를 지속적으로 흡수해야만 일어나는 흡열 반응.'
+                ]
+            },
+            {
+                id: 'nh4no3',
+                type: 'endo',
+                shortTitle: '질산 암모늄 + 물',
+                badge: '냉찜질팩 원리',
+                curriculumTag: '미래엔 교과서 냉찜질팩 탐구',
+                materials: '비커(250mL), 증류수(물 100mL), 질산 암모늄(NH₄NO₃) 25g, 디지털 온도계, 유리 막대, 전자저울',
+                equationHtml: 'NH<sub>4</sub>NO<sub>3</sub>(s) + <span class="text-sky-600">열에너지 흡수</span> &rarr; NH<sub>4</sub><sup>+</sup>(aq) + NO<sub>3</sub><sup>-</sup>(aq)',
+                equationPlain: 'NH4NO3(s) + 열에너지 → NH4+(aq) + NO3-(aq)',
+                phenomenonDesc: '질산 암모늄이 물에 녹으면서 주변의 열을 빠르게 흡수하여 비커 바깥 표면에 차가운 물방울이 맺히고 온도가 5°C까지 내려갑니다.',
+                temps: [15.5, 11.5, 8.5, 6.5, 5.5, 5.0, 5.0, 5.0],
+                yMin: 0,
+                yMax: 25,
+                hasBubbles: false,
+                hasSteam: false,
+                woodFreeze: false,
+                liquidColor: 'rgba(14, 165, 233, 0.35)',
+                visualCaption: '질산 암모늄이 물에 녹으며 주위의 열에너지를 흡수하여 비커 표면에 이슬이 맺히고 온도가 5.0°C까지 하강합니다.',
+                part1Analysis: '질산 암모늄을 물에 넣고 저어주자 시간이 지남에 따라 온도가 초기 20.0°C에서 30초에 15.5°C, 90초에 8.5°C로 내려갔으며 180초 이후에는 5.0°C까지 낮아졌다. 이 실험 결과를 통해 질산 암모늄이 물에 용해되는 반응은 주위로부터 열에너지를 흡수하여 주변 온도를 낮추는 에너지 흡수 과정(흡열 반응)임을 알 수 있다.',
+                part2Temp: '여름철 냉면 육수나 화채, 음료를 차갑게 식히기 위해 필요한 저온 (약 4°C ~ 8°C)',
+                part2Method: '질산 암모늄(NH₄NO₃)이 물에 녹을 때 주변의 열에너지를 흡수하여 온도가 크게 내려가는 흡열 반응을 이용해 얼음 없이도 차가운 냉각 온도를 얻는다.',
+                part2CookingBadge: '즉석 냉면 육수 급속 냉각기',
+                part2Design: '[야외용 즉석 냉면 육수·음료 급속 냉각 텀블러 설계] 텀블러 벽면 내부의 밀폐된 공간에 질산 암모늄과 물 주머니를 분리해 장착한다. 야외에서 미지근해진 냉면 육수나 과일 화채를 텀블러에 담고 하단 버튼을 눌러 벽면 내부의 물 주머니를 터뜨리면, 질산 암모늄이 녹으며 흡열 반응을 일으켜 육수의 열에너지를 빠르게 흡수하므로 얼음 없이도 3분 만에 5°C 이하의 시원한 냉면과 화채를 조리할 수 있다.',
+                cookingIcon: '🍜',
+                cookingTitle: '즉석 냉면 육수 급속 냉각기 시뮬레이션',
+                cookingDoneMsg: '질산 암모늄 흡열 팩이 육수의 열을 빠르게 흡수하여 5°C의 살얼음처럼 시원한 냉면을 완성했습니다!',
+                part3Tag: '일회용 아이스팩(냉찜질팩)',
+                part3Life: '[일회용 응급 냉찜질팩과 요소 쿨팩] 스포츠 경기나 야외 활동 중 부상을 입었을 때 사용하는 휴대용 냉찜질팩 속에는 질산 암모늄(또는 요소)과 물 주머니가 들어 있다. 팩을 주물러 물 주머니를 터뜨리면 질산 암모늄이 물에 녹으면서 주변의 열에너지를 흡수하는 흡열 반응이 일어나 주변 온도가 약 5°C까지 급격히 낮아진다.',
+                extraExamples: [
+                    '• 제빵용 베이킹파우더(탄산수소 나트륨)의 열분해: 반죽 속에서 열에너지를 흡수해 이산화 탄소 기체를 발생시켜 빵을 부풀림.',
+                    '• 땀의 증발 및 얼음의 융해(상태 변화): 액체가 기화하거나 고체가 융해할 때 주변의 열에너지를 흡수하여 시원해짐.'
+                ]
+            },
+            {
+                id: 'nahco3',
+                type: 'endo',
+                shortTitle: '탄산수소 나트륨 + 시트르산',
+                badge: '식용 가능 흡열 반응',
+                curriculumTag: '발포정·샤베트 원리 탐구',
+                materials: '비커, 물(100mL), 탄산수소 나트륨(베이킹소다, NaHCO₃) 10g, 시트르산(구연산) 10g, 디지털 온도계, 유리 막대',
+                equationHtml: '3NaHCO<sub>3</sub>(aq) + C<sub>6</sub>H<sub>8</sub>O<sub>7</sub>(aq) + <span class="text-sky-600">열에너지 흡수</span> &rarr; Na<sub>3</sub>C<sub>6</sub>H<sub>5</sub>O<sub>7</sub>(aq) + 3H<sub>2</sub>O(l) + 3CO<sub>2</sub>(g)&uarr;',
+                equationPlain: '3NaHCO3(aq) + C6H8O7(aq) + 열에너지 → Na3C6H5O7(aq) + 3H2O(l) + 3CO2(g)↑',
+                phenomenonDesc: '베이킹소다와 시트르산이 반응해 이산화 탄소(CO₂) 거품이 보글보글 올라오면서 주변 열을 흡수해 용액이 시원해집니다(11°C).',
+                temps: [17.0, 14.5, 13.0, 12.0, 11.5, 11.0, 11.0, 11.0],
+                yMin: 5,
+                yMax: 25,
+                hasBubbles: true,
+                hasSteam: false,
+                woodFreeze: false,
+                liquidColor: 'rgba(56, 189, 248, 0.3)',
+                visualCaption: '이산화 탄소(CO₂) 기포가 활발히 발생하면서 주위의 열에너지를 흡수해 온도가 11.0°C까지 시원하게 내려갑니다!',
+                part1Analysis: '탄산수소 나트륨 수용액에 시트르산을 넣자 이산화 탄소 기체가 발생하며 온도가 초기 20.0°C에서 30초에 17.0°C, 90초에 13.0°C, 180초 이후 11.0°C까지 꾸준히 하락하였다. 이 결과를 통해 탄산수소 나트륨과 시트르산의 반응은 주위의 열에너지를 흡수하여 온도를 낮추는 에너지 흡수 과정(흡열 반응)임을 알 수 있다.',
+                part2Temp: '청량감이 있고 입안과 음료를 시원하게 해 주는 저온 (약 10°C ~ 13°C)',
+                part2Method: '식용이 가능한 탄산수소 나트륨(베이킹소다)과 시트르산(구연산)이 물에 녹아 반응할 때 주위의 열에너지를 흡수하여 온도가 내려가는 흡열 반응을 직접 조리에 이용한다.',
+                part2CookingBadge: '시원한 천연 탄산 에이드 & 샤베트',
+                part2Design: '[즉석 쿨링 천연 탄산 레몬 에이드 & 발포 캔디 조리법 설계] 상온의 물에 설탕과 레몬즙(시트르산 포함)을 넣은 뒤 식용 탄산수소 나트륨(베이킹소다)을 한 스푼 넣고 저어준다. 두 물질이 반응하면서 주위의 열에너지를 흡수(흡열 반응)하여 얼음을 넣지 않아도 음료 자체의 온도가 약 11°C까지 시원하게 낮아지며, 동시에 이산화 탄소(CO₂) 기포가 발생해 톡 쏘는 천연 탄산 에이드를 조리할 수 있다.',
+                cookingIcon: '🍋',
+                cookingTitle: '즉석 쿨링 천연 탄산 에이드 조리 시뮬레이션',
+                cookingDoneMsg: '베이킹소다와 시트르산이 반응해 CO₂ 탄산 기포를 만들고 열을 흡수해 11°C의 시원한 에이드가 되었습니다!',
+                part3Tag: '발포 비타민 & 쿨링 샤베트 캔디',
+                part3Life: '[발포 비타민과 입안이 시원해지는 샤베트 가루 캔디] 물에 넣으면 기포가 나는 발포 비타민이나, 입안에 넣으면 침(물)에 녹으며 톡 쏘고 시원해지는 샤베트 캔디에는 탄산수소 나트륨과 시트르산이 들어 있다. 이들이 반응할 때 주위(물 또는 입안)로부터 열에너지를 흡수하는 흡열 반응이 일어나 주변 온도가 낮아지므로 시원한 청량감을 느끼게 된다.',
+                extraExamples: [
+                    '• 베이킹소다를 이용한 제빵(달고나·식빵): 탄산수소 나트륨이 열에너지를 흡수해 열분해되면서 이산화 탄소를 발생시켜 부풀어 오름.',
+                    '• 탄산 입욕제(배스 밤): 물에 넣으면 탄산수소 나트륨과 시트르산이 흡열 반응하며 이산화 탄소 거품을 발생시킴.'
+                ]
+            }
+        ];
+
+        let currentReaction = REACTIONS[0];
+        let chartInstance = null;
+        let simTimer = null;
+        let currentStepIndex = -1;
+
+        // Initialize Page
+        window.onload = function() {
+            renderSelectorButtons();
+            initChart();
+            selectReaction('cacl2');
+            populateComparisonModal();
+        };
+
+        // Render 6 Reaction Selector Buttons
+        function renderSelectorButtons() {
+            const exoContainer = document.getElementById('exo-buttons');
+            const endoContainer = document.getElementById('endo-buttons');
+            exoContainer.innerHTML = '';
+            endoContainer.innerHTML = '';
+
+            REACTIONS.forEach(rxn => {
+                const btn = document.createElement('button');
+                btn.id = `rxn-btn-${rxn.id}`;
+                btn.onclick = () => selectReaction(rxn.id);
+                btn.className = 'rxn-select-btn text-left p-2.5 rounded-xl border transition flex flex-col justify-between bg-white hover:shadow-sm';
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${rxn.type === 'exo' ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}">${rxn.badge}</span>
+                        <i class="fa-solid ${rxn.type === 'exo' ? 'fa-fire text-rose-500' : 'fa-snowflake text-sky-500'} text-xs"></i>
+                    </div>
+                    <div class="font-bold text-xs sm:text-sm text-slate-800 leading-snug">${rxn.shortTitle}</div>
+                `;
+                if (rxn.type === 'exo') {
+                    exoContainer.appendChild(btn);
+                } else {
+                    endoContainer.appendChild(btn);
+                }
+            });
+        }
+
+        // Select a Reaction and Update All Worksheet Sections
+        function selectReaction(id) {
+            const found = REACTIONS.find(r => r.id === id);
+            if (!found) return;
+            currentReaction = found;
+
+            // Highlight active button
+            document.querySelectorAll('.rxn-select-btn').forEach(b => {
+                b.className = 'rxn-select-btn text-left p-2.5 rounded-xl border border-slate-200 transition flex flex-col justify-between bg-white hover:bg-slate-50 opacity-80';
+            });
+            const activeBtn = document.getElementById(`rxn-btn-${id}`);
+            if (activeBtn) {
+                activeBtn.className = `rxn-select-btn text-left p-2.5 rounded-xl border-2 transition flex flex-col justify-between bg-white shadow-sm ${
+                    found.type === 'exo' ? 'border-rose-500 ring-2 ring-rose-200' : 'border-sky-500 ring-2 ring-sky-200'
+                }`;
+            }
+
+            // Update Header Badge
+            const typeBadge = document.getElementById('reaction-type-badge');
+            if (found.type === 'exo') {
+                typeBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-rose-500 text-white';
+                typeBadge.innerHTML = '<i class="fa-solid fa-fire-flame-curved mr-1"></i> 발열 반응 (에너지 방출)';
+            } else {
+                typeBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-sky-500 text-white';
+                typeBadge.innerHTML = '<i class="fa-solid fa-snowflake mr-1"></i> 흡열 반응 (에너지 흡수)';
+            }
+
+            // Update Part 1 Top Info
+            document.getElementById('materials-text').innerText = found.materials;
+            document.getElementById('curriculum-tag').innerText = found.curriculumTag;
+            document.getElementById('equation-html').innerHTML = found.equationHtml;
+            document.getElementById('equation-plain').innerText = found.equationPlain;
+            document.getElementById('phenomenon-desc').innerText = '💡 핵심 현상: ' + found.phenomenonDesc;
+
+            // Update Part 1 Analysis Answer
+            document.getElementById('part1-analysis-text').innerText = found.part1Analysis;
+
+            // Update Part 2 Answers
+            document.getElementById('part2-temp').innerText = found.part2Temp;
+            document.getElementById('part2-method').innerText = found.part2Method;
+            document.getElementById('part2-cooking-badge').innerText = found.part2CookingBadge;
+            document.getElementById('part2-design').innerText = found.part2Design;
+            document.getElementById('cooking-sim-icon').innerText = found.cookingIcon;
+            document.getElementById('cooking-sim-title').innerText = found.cookingTitle;
+            document.getElementById('cooking-sim-status').innerText = '우측 버튼을 눌러 설계한 조리 도구를 작동시켜 보세요!';
+
+            // Update Part 3 Answers
+            document.getElementById('part3-example-tag').innerText = found.part3Tag;
+            document.getElementById('part3-life-text').innerText = found.part3Life;
+            document.getElementById('part3-extra-examples').innerHTML = found.extraExamples.map(item => `<p>${item}</p>`).join('');
+
+            // Configure Visual Apparatus Theme
+            setupVisualApparatus(found);
+
+            // Reset & Complete Data by default so student immediately sees the table & graph filled out
+            instantCompleteSimulation(false);
+        }
+
+        // Configure Visual Beaker & Energy Arrows
+        function setupVisualApparatus(rxn) {
+            const pill = document.getElementById('energy-direction-pill');
+            const leftArrow = document.getElementById('left-energy-arrow');
+            const rightArrow = document.getElementById('right-energy-arrow');
+            const leftIcon = document.getElementById('left-arrow-icon');
+            const rightIcon = document.getElementById('right-arrow-icon');
+            const leftLabel = document.getElementById('left-arrow-label');
+            const rightLabel = document.getElementById('right-arrow-label');
+            const mercury = document.getElementById('thermometer-mercury');
+            const bulb = document.getElementById('thermometer-bulb');
+            const liquid = document.getElementById('beaker-liquid');
+
+            liquid.style.backgroundColor = rxn.liquidColor;
+
+            if (rxn.type === 'exo') {
+                pill.className = 'mb-3 px-3.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-2';
+                pill.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket"></i> 계(반응물) &rarr; 주위로 열에너지 방출 (주변 온도 상승)';
+                leftArrow.className = 'flex flex-col items-center mr-3 text-rose-400';
+                rightArrow.className = 'flex flex-col items-center ml-3 text-rose-400';
+                leftIcon.className = 'fa-solid fa-angles-left text-lg arrow-in';
+                rightIcon.className = 'fa-solid fa-angles-right text-lg arrow-out';
+                leftLabel.innerText = '열 방출';
+                rightLabel.innerText = '열 방출';
+                mercury.className = 'w-full bg-rose-500 rounded-full transition-all duration-500';
+                bulb.className = 'w-5 h-5 rounded-full bg-rose-500 border-2 border-slate-300 -ml-1 -mb-1.5 shadow';
+            } else {
+                pill.className = 'mb-3 px-3.5 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 flex items-center gap-2';
+                pill.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> 주위 &rarr; 계(반응물)로 열에너지 흡수 (주변 온도 하강)';
+                leftArrow.className = 'flex flex-col items-center mr-3 text-sky-400';
+                rightArrow.className = 'flex flex-col items-center ml-3 text-sky-400';
+                leftIcon.className = 'fa-solid fa-angles-right text-lg arrow-out';
+                rightIcon.className = 'fa-solid fa-angles-left text-lg arrow-in';
+                leftLabel.innerText = '열 흡수';
+                rightLabel.innerText = '열 흡수';
+                mercury.className = 'w-full bg-sky-400 rounded-full transition-all duration-500';
+                bulb.className = 'w-5 h-5 rounded-full bg-sky-400 border-2 border-slate-300 -ml-1 -mb-1.5 shadow';
+            }
+        }
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('reactionChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: TIME_LABELS.map(t => t + '초'),
+                    datasets: [{
+                        label: '온도 (°C)',
+                        data: [null, null, null, null, null, null, null, null],
+                        borderColor: '#e11d48',
+                        backgroundColor: 'rgba(225, 29, 72, 0.12)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#e11d48',
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.25
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` 측정 온도: ${context.parsed.y.toFixed(1)} °C`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 15,
+                            max: 45,
+                            title: { display: true, text: '온도 (°C)', font: { weight: 'bold' } }
+                        },
+                        x: {
+                            title: { display: true, text: '시간 (초)', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Chart Theme & Scale for Selected Reaction
+        function configureChartForReaction(rxn) {
+            if (!chartInstance) return;
+            const isExo = rxn.type === 'exo';
+            const color = isExo ? '#e11d48' : '#0284c7';
+            const bgColor = isExo ? 'rgba(225, 29, 72, 0.12)' : 'rgba(2, 132, 199, 0.12)';
+
+            chartInstance.data.datasets[0].borderColor = color;
+            chartInstance.data.datasets[0].backgroundColor = bgColor;
+            chartInstance.data.datasets[0].pointBackgroundColor = color;
+            chartInstance.options.scales.y.min = rxn.yMin;
+            chartInstance.options.scales.y.max = rxn.yMax;
+            chartInstance.update();
+        }
+
+        // Update Visual Effects at Step (0 to 7)
+        function updateVisualStep(stepIdx) {
+            const rxn = currentReaction;
+            const temp = stepIdx >= 0 ? rxn.temps[stepIdx] : 20.0;
+            const timeSec = stepIdx >= 0 ? TIME_LABELS[stepIdx] : '0';
+
+            document.getElementById('live-temp-badge').innerText = `${temp.toFixed(1)}°C`;
+            document.getElementById('sim-status-text').innerText = stepIdx >= 0 ? `실험 진행: ${timeSec}초 경과` : '실험 대기 중 (0초, 20.0°C)';
+
+            // Thermometer height percentage
+            const ratio = Math.max(0.08, Math.min(0.95, (temp - rxn.yMin) / (rxn.yMax - rxn.yMin)));
+            document.getElementById('thermometer-mercury').style.height = `${Math.round(ratio * 100)}%`;
+
+            // Bubbles, Steam, Frost, Wood Freeze
+            const bubbles = document.getElementById('bubbles-container');
+            const steam = document.getElementById('steam-effect');
+            const frost = document.getElementById('frost-overlay');
+            const waterLayer = document.getElementById('water-freeze-layer');
+            const freezeLabel = document.getElementById('freeze-status-label');
+            const solid = document.getElementById('solid-reactant');
+
+            if (stepIdx >= 0) {
+                // Shrink solid reactant as it dissolves/reacts
+                const shrinkScale = Math.max(0.25, 1 - (stepIdx + 1) * 0.1);
+                solid.style.transform = `scaleX(${shrinkScale})`;
+
+                if (rxn.hasBubbles && stepIdx < 7) {
+                    bubbles.classList.remove('hidden');
+                } else {
+                    bubbles.classList.add('hidden');
+                }
+
+                if (rxn.hasSteam && stepIdx >= 1) {
+                    steam.classList.remove('opacity-0');
+                } else {
+                    steam.classList.add('opacity-0');
+                }
+
+                if (rxn.type === 'endo' && stepIdx >= 2) {
+                    frost.classList.remove('opacity-0');
+                } else {
+                    frost.classList.add('opacity-0');
+                }
+
+                if (rxn.woodFreeze && temp <= 0) {
+                    waterLayer.className = 'w-28 h-3 bg-sky-200 border border-white rounded-full transition-all duration-500 flex items-center justify-center shadow';
+                    freezeLabel.innerText = '❄️ 물이 얼어 나무판과 결착!';
+                    freezeLabel.className = 'text-[9px] font-extrabold text-sky-900';
+                } else {
+                    waterLayer.className = 'w-24 h-2 bg-sky-400/50 rounded-full transition-all duration-500 flex items-center justify-center';
+                    freezeLabel.innerText = rxn.woodFreeze ? '💧 물방울' : '';
+                }
+
+                document.getElementById('live-visual-caption').innerHTML = rxn.visualCaption;
+            } else {
+                solid.style.transform = 'scaleX(1)';
+                bubbles.classList.add('hidden');
+                steam.classList.add('opacity-0');
+                frost.classList.add('opacity-0');
+                waterLayer.className = 'w-24 h-2 bg-sky-400/50 rounded-full transition-all duration-500 flex items-center justify-center';
+                freezeLabel.innerText = rxn.woodFreeze ? '💧 물방울' : '';
+                document.getElementById('live-visual-caption').innerHTML = '상단의 <strong>[실험 시작]</strong> 버튼을 눌러 30초 간격의 온도 변화를 관찰하세요.';
+            }
+        }
+
+        // Play Step-by-Step Animation
+        function startSimulation() {
+            resetSimulation();
+            const btnPlay = document.getElementById('btn-play');
+            btnPlay.disabled = true;
+            btnPlay.classList.add('opacity-50');
+
+            currentStepIndex = 0;
+            simTimer = setInterval(() => {
+                if (currentStepIndex < TIME_LABELS.length) {
+                    const val = currentReaction.temps[currentStepIndex];
+                    const cell = document.getElementById(`cell-${currentStepIndex}`);
+                    cell.innerText = val.toFixed(1);
+                    cell.className = `border border-slate-300 p-2 font-extrabold ${
+                        currentReaction.type === 'exo' ? 'text-rose-600 bg-rose-50/50' : 'text-sky-600 bg-sky-50/50'
+                    }`;
+
+                    chartInstance.data.datasets[0].data[currentStepIndex] = val;
+                    chartInstance.update();
+
+                    updateVisualStep(currentStepIndex);
+                    currentStepIndex++;
+                } else {
+                    clearInterval(simTimer);
+                    simTimer = null;
+                    btnPlay.disabled = false;
+                    btnPlay.classList.remove('opacity-50');
+                    showToast(`${currentReaction.shortTitle} 240초 실험 측정이 완료되었습니다!`);
+                }
+            }, 450);
+        }
+
+        // Instant Complete (Fill all 30s~240s immediately)
+        function instantCompleteSimulation(notify = true) {
+            if (simTimer) {
+                clearInterval(simTimer);
+                simTimer = null;
+            }
+            const btnPlay = document.getElementById('btn-play');
+            btnPlay.disabled = false;
+            btnPlay.classList.remove('opacity-50');
+
+            configureChartForReaction(currentReaction);
+
+            currentReaction.temps.forEach((val, idx) => {
+                const cell = document.getElementById(`cell-${idx}`);
+                cell.innerText = val.toFixed(1);
+                cell.className = `border border-slate-300 p-2 font-extrabold ${
+                    currentReaction.type === 'exo' ? 'text-rose-600 bg-rose-50/40' : 'text-sky-600 bg-sky-50/40'
+                }`;
+            });
+
+            chartInstance.data.datasets[0].data = [...currentReaction.temps];
+            chartInstance.update();
+
+            updateVisualStep(TIME_LABELS.length - 1);
+            if (notify) {
+                showToast('30초~240초 전체 표와 그래프 결과가 즉시 완성되었습니다.');
+            }
+        }
+
+        // Reset Simulation to 0s
+        function resetSimulation() {
+            if (simTimer) {
+                clearInterval(simTimer);
+                simTimer = null;
+            }
+            const btnPlay = document.getElementById('btn-play');
+            btnPlay.disabled = false;
+            btnPlay.classList.remove('opacity-50');
+
+            configureChartForReaction(currentReaction);
+
+            TIME_LABELS.forEach((_, idx) => {
+                const cell = document.getElementById(`cell-${idx}`);
+                cell.innerText = '-';
+                cell.className = 'border border-slate-300 p-2 font-bold text-slate-400';
+            });
+
+            chartInstance.data.datasets[0].data = [null, null, null, null, null, null, null, null];
+            chartInstance.update();
+            updateVisualStep(-1);
+        }
+
+        // Trigger Part 2 Cooking Simulation
+        function triggerCookingSim() {
+            const statusEl = document.getElementById('cooking-sim-status');
+            const iconEl = document.getElementById('cooking-sim-icon');
+            iconEl.classList.add('scale-110', 'ring-2', 'ring-amber-400');
+            statusEl.innerText = currentReaction.cookingDoneMsg;
+            statusEl.className = 'text-xs text-amber-300 font-bold mt-0.5';
+            showToast(currentReaction.cookingDoneMsg);
+            setTimeout(() => {
+                iconEl.classList.remove('scale-110', 'ring-2', 'ring-amber-400');
+            }, 900);
+        }
+
+        // Populate 6-Reaction Summary Modal Table
+        function populateComparisonModal() {
+            const tbody = document.getElementById('comparison-table-body');
+            tbody.innerHTML = REACTIONS.map(r => {
+                const startT = 20.0;
+                const endT = r.temps[r.temps.length - 1];
+                return `
+                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="selectReaction('${r.id}'); closeSummaryModal();">
+                        <td class="border border-slate-200 p-3 font-bold ${r.type === 'exo' ? 'text-rose-600 bg-rose-50/40' : 'text-sky-600 bg-sky-50/40'}">
+                            ${r.type === 'exo' ? '🔥 발열 반응' : '❄️ 흡열 반응'}
+                        </td>
+                        <td class="border border-slate-200 p-3 font-bold text-slate-800">${r.shortTitle}</td>
+                        <td class="border border-slate-200 p-3 font-semibold">${startT.toFixed(1)}°C &rarr; <strong>${endT.toFixed(1)}°C</strong></td>
+                        <td class="border border-slate-200 p-3 text-slate-600">${r.phenomenonDesc}</td>
+                        <td class="border border-slate-200 p-3 font-semibold text-amber-800">${r.part2CookingBadge}</td>
+                        <td class="border border-slate-200 p-3 text-slate-700">${r.part3Tag}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openSummaryModal() {
+            const m = document.getElementById('summary-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeSummaryModal() {
+            const m = document.getElementById('summary-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        // Clipboard Helper (iframe compatible)
+        function copyText(elementId, message) {
+            const text = document.getElementById(elementId).innerText;
+            fallbackCopy(text, message);
+        }
+
+        function copyPart2() {
+            const t1 = document.getElementById('part2-temp').innerText;
+            const t2 = document.getElementById('part2-method').innerText;
+            const t3 = document.getElementById('part2-design').innerText;
+            const combined = `[2. 음식 조리 방법 설계하기]\n■ 필요한 온도: ${t1}\n■ 필요한 온도를 얻는 방법: ${t2}\n■ 음식 조리 방법 설계: ${t3}`;
+            fallbackCopy(combined, '2번 문항 전체 답안이 클립보드에 복사되었습니다!');
+        }
+
+        function fallbackCopy(text, message) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast(message);
+            } catch (e) {
+                showToast('복사에 실패했습니다. 텍스트를 직접 드래그해 복사해 주세요.');
+            }
+            document.body.removeChild(ta);
+        }
+
+        // Toast Notification
+        let toastTimeout = null;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2600);
+        }
+    </script>
+</body>
+</html>
